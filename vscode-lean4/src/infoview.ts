@@ -57,6 +57,7 @@ import { ExtUri, parseExtUri, toExtUri } from './utils/exturi'
 import { lean, LeanEditor } from './utils/leanEditorProvider'
 import { logger } from './utils/logger'
 import { displayNotification } from './utils/notifs'
+import { mapStoreExtUriToPackageExtUri } from './utils/symlinkMapper'
 import { viewColumnOfActiveTextEditor, viewColumnOfInfoView } from './utils/viewColumn'
 
 const keepAlivePeriodMs = 10000
@@ -1015,7 +1016,9 @@ export class InfoProvider implements Disposable {
         await this.webviewPanel?.api.changedCursorLocation(loc)
     }
 
-    private async revealEditorSelection(uri: ExtUri, selection?: Range) {
+    private async revealEditorSelection(rawUri: ExtUri, selection?: Range) {
+        const activeClient = this.clientProvider.getActiveClient()
+        const uri = mapStoreExtUriToPackageExtUri(rawUri, activeClient?.getClientFolder())
         let editor: TextEditor | undefined = lean.getVisibleLeanEditorsByUri(uri).at(0)?.editor
         if (editor === undefined) {
             editor = await window.showTextDocument(uri.asUri(), {

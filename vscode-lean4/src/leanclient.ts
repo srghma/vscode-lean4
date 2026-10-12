@@ -31,6 +31,7 @@ import {
     State,
     StaticFeature,
 } from 'vscode-languageclient/node'
+import { mapLocationResult } from './utils/symlinkMapper'
 
 import {
     LeanFileProgressParams,
@@ -107,7 +108,7 @@ interface LeanClientCapabilties {
 const leanClientCapabilities: LeanClientCapabilties = {
     incrementalDiagnosticSupport: true,
     silentDiagnosticSupport: true,
-    rpcWireFormat: 'v1'
+    rpcWireFormat: 'v1',
 }
 
 export type PrepareModuleHierarchyResult =
@@ -872,6 +873,26 @@ export class LeanClient implements Disposable {
                 cancellationStrategy: undefined as any,
             },
             middleware: {
+                provideDefinition: async (doc, pos, token, next) => {
+                    const res = await next(doc, pos, token)
+                    return mapLocationResult(res, this.folderUri.scheme === 'file' ? this.folderUri.asUri() : undefined)
+                },
+                provideDeclaration: async (doc, pos, token, next) => {
+                    const res = await next(doc, pos, token)
+                    return mapLocationResult(res, this.folderUri.scheme === 'file' ? this.folderUri.asUri() : undefined)
+                },
+                provideTypeDefinition: async (doc, pos, token, next) => {
+                    const res = await next(doc, pos, token)
+                    return mapLocationResult(res, this.folderUri.scheme === 'file' ? this.folderUri.asUri() : undefined)
+                },
+                provideImplementation: async (doc, pos, token, next) => {
+                    const res = await next(doc, pos, token)
+                    return mapLocationResult(res, this.folderUri.scheme === 'file' ? this.folderUri.asUri() : undefined)
+                },
+                provideReferences: async (doc, pos, context, token, next) => {
+                    const res = await next(doc, pos, context, token)
+                    return mapLocationResult(res, this.folderUri.scheme === 'file' ? this.folderUri.asUri() : undefined)
+                },
                 sendRequest: async (type, param, token, next) => {
                     if (this.isParamExcluded(param)) {
                         // Major HACK:
